@@ -1,0 +1,148 @@
+datasource db {
+  provider = "sqlserver" 
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id         Int      @id @default(autoincrement())
+  role_name  String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  users      User[]
+}
+
+model User {
+  id           Int                @id @default(autoincrement())
+  username     String             @unique
+  password     String
+  email        String             @unique
+  phone_number String
+  reset_token  String?
+  profile_image String?
+  role_id      Int
+  created_at   DateTime           @default(now())
+  updated_at   DateTime           @updatedAt
+  role         Role               @relation(fields: [role_id], references: [id])
+  serviceProvider ServiceProvider?
+  addresses    CustomerAddress[]
+  bookings     Booking[]
+  reviews      Review[]
+}
+
+model ServiceProvider {
+  id          Int       @id @default(autoincrement())
+  user_id     Int       @unique
+  name        String
+  category_id Int
+  description String?
+  rating      Float     @default(0.0)
+  location    String?
+  latitude    Float
+  longitude   Float
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  user        User      @relation(fields: [user_id], references: [id])
+  category    Category  @relation(fields: [category_id], references: [id])
+  services    Service[]
+  availability Availability[]
+}
+
+model CustomerAddress {
+  id            Int      @id @default(autoincrement())
+  customer_id   Int
+  address_line1 String
+  address_line2 String?
+  city          String
+  state         String
+  postal_code   String
+  country       String
+  latitude      Float
+  longitude     Float
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  customer      User     @relation(fields: [customer_id], references: [id])
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  providers  ServiceProvider[]
+}
+
+model Service {
+  id            Int      @id @default(autoincrement())
+  provider_id   Int
+  title         String
+  description   String
+  price         Float
+  duration      Int
+  service_image String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  provider      ServiceProvider @relation(fields: [provider_id], references: [id])
+  bookings      Booking[]
+  reviews       Review[]
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  service_id  Int
+  customer_id Int
+  rating      Int
+  comment     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  service     Service  @relation(fields: [service_id], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  customer    User     @relation(fields: [customer_id], references: [id], onUpdate: NoAction, onDelete: NoAction)
+}
+
+model Booking {
+  id              Int      @id @default(autoincrement())
+  service_id      Int
+  customer_id     Int
+  booking_time    DateTime
+  status          String
+  confirmation_code String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  service         Service  @relation(fields: [service_id], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  customer        User     @relation(fields: [customer_id], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  payments        Payment[]
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  booking_id      Int
+  amount          Float
+  payment_method_id Int
+  payment_status  String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  booking         Booking  @relation(fields: [booking_id], references: [id])
+  paymentMethod   PaymentMethod @relation(fields: [payment_method_id], references: [id])
+}
+
+model PaymentMethod {
+  id         Int      @id @default(autoincrement())
+  method_name String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  payments   Payment[]
+}
+
+model Availability {
+  id          Int      @id @default(autoincrement())
+  provider_id Int
+  day_of_week String
+  start_time  DateTime
+  end_time    DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  provider    ServiceProvider @relation(fields: [provider_id], references: [id])
+}
